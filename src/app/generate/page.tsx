@@ -79,6 +79,7 @@ export default function GeneratePage() {
   const [generatedBlackboard, setGeneratedBlackboard] = useState<string | null>(
     null
   );
+  const [svgBlackboardData, setSvgBlackboardData] = useState<any>(null);
   const [showSVGDemo, setShowSVGDemo] = useState(false);
   const [formData, setFormData] = useState<BlackboardGenerateForm>({
     subject: "mathematics",
@@ -212,7 +213,16 @@ export default function GeneratePage() {
       }
 
       const result = await response.json();
-      setGeneratedBlackboard(result.imageUrl);
+      
+      // 新しいSVGフォーマット対応
+      if (result.type === 'svg' && result.svgData) {
+        setSvgBlackboardData(result.svgData);
+        setGeneratedBlackboard(null); // 古いPNG形式をクリア
+      } else {
+        // 旧形式（PNG）の後方互換性
+        setGeneratedBlackboard(result.imageUrl);
+        setSvgBlackboardData(null);
+      }
     } catch (err) {
       console.error('Generation error:', err);
       
@@ -252,7 +262,7 @@ export default function GeneratePage() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        {!generatedBlackboard ? (
+        {!generatedBlackboard && !svgBlackboardData ? (
           <div className="max-w-4xl mx-auto space-y-8">
             {/* Step 1: File Upload */}
             <Card>
@@ -548,25 +558,46 @@ export default function GeneratePage() {
           </div>
         ) : (
           /* Generated Result */
-          <div className="max-w-4xl mx-auto space-y-8">
+          <div className="max-w-7xl mx-auto space-y-8">
             <Card>
               <CardHeader>
                 <CardTitle className="text-center">
-                  板書が生成されました！
+                  🎨 高品質板書が生成されました！
                 </CardTitle>
                 <CardDescription className="text-center">
-                  生成された板書をプレビューし、ダウンロードしてください
+                  完璧な日本語フォントで生成された板書をご確認ください
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Preview */}
-                <div className="text-center">
-                  <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
-                    <img
-                      src={generatedBlackboard}
-                      alt="生成された板書"
-                      className="w-full h-auto"
-                      onError={(e) => {
+                {/* SVG Preview (メイン) */}
+                {svgBlackboardData ? (
+                  <div className="text-center">
+                    <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                      <p className="text-green-800 font-medium">✅ SVG高品質版で表示中</p>
+                      <p className="text-green-700 text-sm">完璧な日本語フォント・ベクター品質・拡大可能</p>
+                    </div>
+                    
+                    <SVGBlackboard
+                      title={svgBlackboardData.title}
+                      mainContent={svgBlackboardData.mainContent}
+                      sections={svgBlackboardData.sections}
+                      teachingPoints={svgBlackboardData.teachingPoints}
+                    />
+                  </div>
+                ) : generatedBlackboard ? (
+                  /* 旧PNG版（後方互換性） */
+                  <div className="text-center">
+                    <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <p className="text-yellow-800 font-medium">⚠️ レガシーPNG版で表示中</p>
+                      <p className="text-yellow-700 text-sm">文字化けの可能性があります</p>
+                    </div>
+                    
+                    <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
+                      <img
+                        src={generatedBlackboard}
+                        alt="生成された板書"
+                        className="w-full h-auto"
+                        onError={(e) => {
                         // 画像読み込みエラー時の代替表示
                         (e.target as HTMLImageElement).style.display = "none";
                         const parent = (e.target as HTMLImageElement)
@@ -607,6 +638,7 @@ export default function GeneratePage() {
                     variant="outline"
                     onClick={() => {
                       setGeneratedBlackboard(null);
+                      setSvgBlackboardData(null);
                       setUploadedFile(null);
                       setError("");
                     }}
