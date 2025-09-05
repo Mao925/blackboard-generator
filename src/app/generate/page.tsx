@@ -610,27 +610,30 @@ export default function GeneratePage() {
                     />
                   </div>
                 </div>
+                ) : null}
 
-                {/* Actions */}
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Button 
-                    size="lg" 
-                    className="flex-1 max-w-xs"
-                    onClick={() => handleDownload('png')}
-                  >
-                    <Download className="mr-2 h-4 w-4" />
-                    PNG画像をダウンロード
-                  </Button>
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="flex-1 max-w-xs"
-                    onClick={() => handleDownload('pdf')}
-                  >
-                    <Download className="mr-2 h-4 w-4" />
-                    PDFをダウンロード
-                  </Button>
-                </div>
+                {/* Actions - SVGの場合はSVGBlackboardコンポーネント内でダウンロードボタンを提供 */}
+                {generatedBlackboard && (
+                  <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                    <Button 
+                      size="lg" 
+                      className="flex-1 max-w-xs"
+                      onClick={() => handleDownload('png')}
+                    >
+                      <Download className="mr-2 h-4 w-4" />
+                      PNG画像をダウンロード
+                    </Button>
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="flex-1 max-w-xs"
+                      onClick={() => handleDownload('pdf')}
+                    >
+                      <Download className="mr-2 h-4 w-4" />
+                      PDFをダウンロード
+                    </Button>
+                  </div>
+                )}
 
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Button
