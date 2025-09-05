@@ -1,4 +1,5 @@
-import { createServerSupabaseClient, supabaseAdmin } from "./supabase";
+import { createServerSupabaseClient } from "./supabase-server";
+import { supabaseAdmin } from "./supabase";
 import type { User } from "@supabase/supabase-js";
 import type { Database } from "./supabase";
 

@@ -1,9 +1,4 @@
 import { createClient } from "@supabase/supabase-js";
-import {
-  createClientComponentClient,
-  createServerComponentClient,
-} from "@supabase/ssr";
-import { cookies } from "next/headers";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -19,17 +14,6 @@ export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
     persistSession: false,
   },
 });
-
-// サーバーコンポーネント用
-export const createServerSupabaseClient = () => {
-  const cookieStore = cookies();
-  return createServerComponentClient({ cookies: () => cookieStore });
-};
-
-// クライアントコンポーネント用
-export const createClientSupabaseClient = () => {
-  return createClientComponentClient();
-};
 
 // 型定義
 export type Database = {

@@ -1,4 +1,5 @@
-import { createClientSupabaseClient, supabaseAdmin } from "./supabase";
+import { createClientSupabaseClient } from "./supabase-server";
+import { supabaseAdmin } from "./supabase";
 import sharp from "sharp";
 import { v4 as uuidv4 } from "uuid";
 
