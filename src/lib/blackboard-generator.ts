@@ -75,28 +75,46 @@ const DEFAULT_CONFIG: BlackboardConfig = {
 
 // カラースキーム定義
 const COLOR_SCHEMES = {
+  classic: {
+    background: "#f8fafc",
+    text: "#1f2937",
+    accent: "#3b82f6",
+    border: "#e5e7eb",
+  },
+  dark: {
+    background: "#1f2937",
+    text: "#f9fafb",
+    accent: "#60a5fa",
+    border: "#374151",
+  },
+  warm: {
+    background: "#fef7ed",
+    text: "#9a3412",
+    accent: "#ea580c",
+    border: "#fed7aa",
+  },
+  cool: {
+    background: "#f0f9ff",
+    text: "#164e63",
+    accent: "#0891b2",
+    border: "#e0f2fe",
+  },
   colorful: {
     background: "#ffffff",
     text: "#1f2937",
     accent: "#2563eb",
-    secondary: "#059669",
-    warning: "#dc2626",
     border: "#e5e7eb",
   },
   monochrome: {
     background: "#ffffff",
     text: "#1f2937",
     accent: "#374151",
-    secondary: "#6b7280",
-    warning: "#9ca3af",
     border: "#e5e7eb",
   },
   two_color: {
     background: "#ffffff",
     text: "#1f2937",
     accent: "#2563eb",
-    secondary: "#1f2937",
-    warning: "#2563eb",
     border: "#e5e7eb",
   },
 };
@@ -197,16 +215,40 @@ class BlackboardGenerator {
 
   // カラースキーム適用
   private applyColorScheme(colorScheme: ColorScheme) {
-    const colors = COLOR_SCHEMES[colorScheme];
+    try {
+      const colors = COLOR_SCHEMES[colorScheme] || COLOR_SCHEMES.classic;
 
-    this.config.backgroundColor = colors.background;
-    this.config.textColor = colors.text;
-    this.config.accentColor = colors.accent;
-    this.config.borderColor = colors.border;
+      if (!colors) {
+        console.warn(`Color scheme '${colorScheme}' not found, using classic`);
+        const fallback = COLOR_SCHEMES.classic;
+        this.config.backgroundColor = fallback.background;
+        this.config.textColor = fallback.text;
+        this.config.accentColor = fallback.accent;
+        this.config.borderColor = fallback.border;
+      } else {
+        this.config.backgroundColor = colors.background;
+        this.config.textColor = colors.text;
+        this.config.accentColor = colors.accent;
+        this.config.borderColor = colors.border;
+      }
 
-    // 背景再描画
-    this.ctx.fillStyle = this.config.backgroundColor;
-    this.ctx.fillRect(0, 0, this.config.width, this.config.height);
+      // 背景再描画
+      this.ctx.fillStyle = this.config.backgroundColor;
+      this.ctx.fillRect(0, 0, this.config.width, this.config.height);
+      
+      console.log(`Color scheme applied: ${colorScheme}`, {
+        background: this.config.backgroundColor,
+        text: this.config.textColor,
+        accent: this.config.accentColor
+      });
+    } catch (error) {
+      console.error("Color scheme application failed:", error);
+      // デフォルト色設定
+      this.config.backgroundColor = "#f8fafc";
+      this.config.textColor = "#1f2937";
+      this.config.accentColor = "#3b82f6";
+      this.config.borderColor = "#e5e7eb";
+    }
   }
 
   // フォントサイズ調整

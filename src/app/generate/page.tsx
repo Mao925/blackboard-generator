@@ -192,13 +192,20 @@ export default function GeneratePage() {
       formDataToSend.append('colorScheme', formData.colorScheme);
       formDataToSend.append('diagramRatio', formData.diagramRatio);
 
+      // AbortController でタイムアウト制御
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60秒タイムアウト
+
       const response = await fetch('/api/blackboards/generate', {
         method: 'POST',
-        body: formDataToSend
+        body: formDataToSend,
+        signal: controller.signal
       });
 
+      clearTimeout(timeoutId);
+
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({ error: 'APIエラーが発生しました' }));
         throw new Error(errorData.error || '板書生成に失敗しました');
       }
 
@@ -206,7 +213,19 @@ export default function GeneratePage() {
       setGeneratedBlackboard(result.imageUrl);
     } catch (err) {
       console.error('Generation error:', err);
-      setError(err instanceof Error ? err.message : "板書生成に失敗しました");
+      
+      let errorMessage = "板書生成に失敗しました";
+      if (err instanceof Error) {
+        if (err.name === 'AbortError') {
+          errorMessage = "処理時間が長すぎるため中断されました。再度お試しください。";
+        } else if (err.message.includes('Failed to fetch')) {
+          errorMessage = "ネットワークエラーが発生しました。インターネット接続を確認してください。";
+        } else {
+          errorMessage = err.message;
+        }
+      }
+      
+      setError(errorMessage);
     } finally {
       setGenerating(false);
     }
