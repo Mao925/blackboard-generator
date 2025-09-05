@@ -132,14 +132,25 @@ class BlackboardGenerator {
 
   // 日本語対応フォント設定
   private setFont(size: number, weight: string = "normal"): void {
-    // Node.js/Canvas環境で日本語が正常に表示されるフォント設定
-    // 複数のフォールバックを設定して、どれかが使用できるようにする
-    const fontFamily = '"Noto Sans JP", "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", "Meiryo", "MS Gothic", "DejaVu Sans", "Liberation Sans", "FreeSans", Arial, sans-serif';
-    this.ctx.font = `${weight} ${size}px ${fontFamily}`;
-    
-    // テキストレンダリング品質を向上
-    this.ctx.textBaseline = "top";
-    this.ctx.textRenderingOptimization = "optimizeLegibility";
+    try {
+      // Node.js/Canvas環境で最も互換性の高いフォント設定
+      // シンプルで確実なフォントフォールバック
+      const fontFamily = 'Arial, "Liberation Sans", "DejaVu Sans", sans-serif';
+      this.ctx.font = `${weight} ${size}px ${fontFamily}`;
+      
+      // テキストレンダリング設定
+      this.ctx.textBaseline = "alphabetic";
+      this.ctx.fillStyle = this.ctx.fillStyle || "#000000";
+      
+      // フォント読み込み確認のためテスト描画
+      const testText = "テスト";
+      const metrics = this.ctx.measureText(testText);
+      
+      console.log(`Font set: ${this.ctx.font}, test width: ${metrics.width}`);
+    } catch (error) {
+      console.warn("Font setting failed, using fallback:", error);
+      this.ctx.font = `${weight} ${size}px Arial, sans-serif`;
+    }
   }
 
   // メイン生成関数
@@ -148,6 +159,12 @@ class BlackboardGenerator {
     options: GenerationOptions
   ): Promise<Buffer> {
     try {
+      console.log("Starting blackboard generation with:", {
+        title: analysis.title,
+        layoutType: options.layoutType,
+        canvasSize: `${this.config.width}x${this.config.height}`
+      });
+
       // カラースキーム適用
       this.applyColorScheme(options.colorScheme);
 
@@ -157,11 +174,24 @@ class BlackboardGenerator {
       // レイアウトに応じた描画
       await this.renderLayout(analysis, options);
 
+      console.log("Blackboard generation completed successfully");
+
       // Bufferとして出力
       return this.canvas.toBuffer("image/png");
     } catch (error) {
-      console.error("Blackboard generation error:", error);
-      throw new Error("板書生成に失敗しました");
+      console.error("Blackboard generation error details:", {
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+        analysis: {
+          title: analysis?.title,
+          mainContentLength: analysis?.mainContent?.length,
+          subContentLength: analysis?.subContent?.length
+        }
+      });
+      
+      // より具体的なエラーメッセージ
+      const errorMessage = error instanceof Error ? error.message : "不明なエラー";
+      throw new Error(`板書生成に失敗しました: ${errorMessage}`);
     }
   }
 

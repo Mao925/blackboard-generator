@@ -172,9 +172,9 @@ async function processBlackboardGeneration(
       unitName: params.unitName || undefined,
     });
 
-    // 4. 板書生成（SVGベース - 日本語対応）
+    // 4. 板書生成（改良Canvas版 - 安定動作重視）
     console.log("Generating blackboard...");
-    const blackboardBuffer = await generateSVGBlackboard(aiAnalysis, {
+    const blackboardBuffer = await generateBlackboard(aiAnalysis, {
       subject: params.subject as any,
       grade: params.grade as any,
       layoutType: params.layoutType as any,
