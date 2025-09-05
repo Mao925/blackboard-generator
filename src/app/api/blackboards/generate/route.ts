@@ -79,8 +79,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ファイル処理の開始（非同期で実行）
-    processBlackboardGeneration(file, blackboardId, user.id, {
+    // MVPでは同期処理（簡単にするため）
+    const result = await processBlackboardGeneration(file, blackboardId, user.id, {
       subject,
       grade,
       layoutType,
@@ -92,12 +92,19 @@ export async function POST(request: NextRequest) {
       classDuration: classDuration ? parseInt(classDuration) : null,
     });
 
-    // 即座にレスポンスを返す
-    return NextResponse.json({
-      blackboardId,
-      status: "processing",
-      message: "板書生成を開始しました。処理が完了するまでお待ちください。",
-    });
+    if (result.success) {
+      return NextResponse.json({
+        blackboardId,
+        imageUrl: result.imageUrl,
+        status: "completed",
+        message: "板書生成が完了しました",
+      });
+    } else {
+      return NextResponse.json(
+        { error: result.error || "板書生成に失敗しました" },
+        { status: 500 }
+      );
+    }
   } catch (error) {
     console.error("Blackboard generation error:", error);
     return NextResponse.json(
@@ -123,7 +130,7 @@ async function processBlackboardGeneration(
     keyPoints: string | null;
     classDuration: number | null;
   }
-) {
+): Promise<{ success: boolean; imageUrl?: string; error?: string }> {
   try {
     // 1. 元画像をアップロード
     const originalImageResult = await uploadImageBuffer(
@@ -201,6 +208,11 @@ async function processBlackboardGeneration(
     );
 
     console.log(`Blackboard generation completed: ${blackboardId}`);
+    
+    return {
+      success: true,
+      imageUrl: generatedImageResult.url,
+    };
   } catch (error) {
     console.error(`Blackboard generation failed: ${blackboardId}`, error);
 
@@ -212,5 +224,10 @@ async function processBlackboardGeneration(
         updated_at: new Date().toISOString(),
       })
       .eq("id", blackboardId);
+
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "板書生成に失敗しました",
+    };
   }
 }

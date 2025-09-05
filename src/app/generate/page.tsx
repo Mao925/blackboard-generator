@@ -91,11 +91,23 @@ export default function GeneratePage() {
   });
 
   useEffect(() => {
-    // ログイン確認
-    const userData = localStorage.getItem("user");
-    if (!userData) {
-      router.push("/auth/login");
-    }
+    // ログイン確認（簡易版 - 本格版では useAuth フックを使用）
+    const checkAuth = async () => {
+      try {
+        const response = await fetch('/api/auth/check');
+        if (!response.ok) {
+          router.push("/auth/login");
+        }
+      } catch (error) {
+        // ローカルストレージでのフォールバック
+        const userData = localStorage.getItem("user");
+        if (!userData) {
+          router.push("/auth/login");
+        }
+      }
+    };
+    
+    checkAuth();
   }, [router]);
 
   const handleFileUpload = (file: File) => {
@@ -126,6 +138,34 @@ export default function GeneratePage() {
     }
   };
 
+  const handleDownload = async (format: 'png' | 'pdf') => {
+    if (!generatedBlackboard) return;
+
+    try {
+      // 画像をBlobとして取得
+      const response = await fetch(generatedBlackboard);
+      const blob = await response.blob();
+      
+      // ダウンロード用のリンクを作成
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      
+      const now = new Date();
+      const timestamp = now.toISOString().slice(0, 19).replace(/:/g, '-');
+      const filename = `blackboard_${timestamp}.${format}`;
+      
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download error:', error);
+      setError('ダウンロードに失敗しました');
+    }
+  };
+
   const handleGenerate = async () => {
     if (!uploadedFile) {
       setError("画像ファイルをアップロードしてください");
@@ -136,27 +176,33 @@ export default function GeneratePage() {
     setError("");
 
     try {
-      // TODO: 実際のAPI呼び出し実装
-      // const formDataToSend = new FormData();
-      // formDataToSend.append('image', uploadedFile);
-      // formDataToSend.append('formData', JSON.stringify(formData));
+      // 実際のAPI呼び出し
+      const formDataToSend = new FormData();
+      formDataToSend.append('file', uploadedFile);
+      formDataToSend.append('subject', formData.subject);
+      formDataToSend.append('grade', formData.grade);
+      formDataToSend.append('unitName', formData.unitName);
+      formDataToSend.append('classDuration', formData.classDuration.toString());
+      formDataToSend.append('keyPoints', formData.keyPoints);
+      formDataToSend.append('layoutType', formData.layoutType);
+      formDataToSend.append('textSize', formData.textSize);
+      formDataToSend.append('colorScheme', formData.colorScheme);
+      formDataToSend.append('diagramRatio', formData.diagramRatio);
 
-      // const response = await fetch('/api/generate', {
-      //   method: 'POST',
-      //   body: formDataToSend
-      // });
+      const response = await fetch('/api/blackboards/generate', {
+        method: 'POST',
+        body: formDataToSend
+      });
 
-      // if (!response.ok) {
-      //   throw new Error('板書生成に失敗しました');
-      // }
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || '板書生成に失敗しました');
+      }
 
-      // const result = await response.json();
-      // setGeneratedBlackboard(result.imageUrl);
-
-      // MVPでは仮の生成処理
-      await new Promise((resolve) => setTimeout(resolve, 3000)); // 3秒待機
-      setGeneratedBlackboard("/sample-generated-blackboard.png");
+      const result = await response.json();
+      setGeneratedBlackboard(result.imageUrl);
     } catch (err) {
+      console.error('Generation error:', err);
       setError(err instanceof Error ? err.message : "板書生成に失敗しました");
     } finally {
       setGenerating(false);
@@ -512,7 +558,11 @@ export default function GeneratePage() {
 
                 {/* Actions */}
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Button size="lg" className="flex-1 max-w-xs">
+                  <Button 
+                    size="lg" 
+                    className="flex-1 max-w-xs"
+                    onClick={() => handleDownload('png')}
+                  >
                     <Download className="mr-2 h-4 w-4" />
                     PNG画像をダウンロード
                   </Button>
@@ -520,6 +570,7 @@ export default function GeneratePage() {
                     size="lg"
                     variant="outline"
                     className="flex-1 max-w-xs"
+                    onClick={() => handleDownload('pdf')}
                   >
                     <Download className="mr-2 h-4 w-4" />
                     PDFをダウンロード
