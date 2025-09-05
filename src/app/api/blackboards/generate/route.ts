@@ -9,27 +9,29 @@ import { v4 as uuidv4 } from "uuid";
 
 export async function POST(request: NextRequest) {
   try {
-    // 認証チェック
-    const authResult = await getCurrentUser();
-    if (!authResult) {
-      return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
-    }
+    // MVP版: 認証チェックを一時的にスキップ
+    let user = { id: "demo-user", email: "demo@example.com" };
+    let profile = { plan_type: "pro" }; // 制限なしでテスト
 
-    const { user, profile } = authResult;
+    // 本格版では以下のコードを有効化
+    // const authResult = await getCurrentUser();
+    // if (!authResult) {
+    //   return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
+    // }
+    // const { user, profile } = authResult;
 
-    // 使用制限チェック
-    const usageLimits = await checkUsageLimits(user.id);
-    if (!usageLimits.canGenerate) {
-      return NextResponse.json(
-        {
-          error:
-            "今月の生成制限に達しました。プランをアップグレードしてください。",
-          currentUsage: usageLimits.currentUsage,
-          limits: usageLimits.limits,
-        },
-        { status: 429 }
-      );
-    }
+    // 使用制限チェックもスキップ（MVP版）
+    // const usageLimits = await checkUsageLimits(user.id);
+    // if (!usageLimits.canGenerate) {
+    //   return NextResponse.json(
+    //     {
+    //       error: "今月の生成制限に達しました。プランをアップグレードしてください。",
+    //       currentUsage: usageLimits.currentUsage,
+    //       limits: usageLimits.limits,
+    //     },
+    //     { status: 429 }
+    //   );
+    // }
 
     // リクエストデータの解析
     const formData = await request.formData();
@@ -51,33 +53,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 板書レコードを先に作成（processing状態で）
+    // MVP版: データベース処理をスキップして直接生成
     const blackboardId = uuidv4();
-    const { error: insertError } = await supabaseAdmin
-      .from("blackboards")
-      .insert({
-        id: blackboardId,
-        user_id: user.id,
-        title: `${subject} - ${new Date().toLocaleDateString("ja-JP")}`,
-        subject,
-        grade,
-        unit_name: unitName,
-        class_duration: classDuration ? parseInt(classDuration) : null,
-        key_points: keyPoints,
-        layout_type: layoutType,
-        text_size: textSize,
-        color_scheme: colorScheme,
-        diagram_ratio: diagramRatio,
-        generation_status: "processing",
-      });
-
-    if (insertError) {
-      console.error("Database insert error:", insertError);
-      return NextResponse.json(
-        { error: "データベースエラーが発生しました" },
-        { status: 500 }
-      );
-    }
+    
+    // 本格版では以下のデータベース処理を有効化
+    // const { error: insertError } = await supabaseAdmin
+    //   .from("blackboards")
+    //   .insert({
+    //     id: blackboardId,
+    //     user_id: user.id,
+    //     title: `${subject} - ${new Date().toLocaleDateString("ja-JP")}`,
+    //     subject,
+    //     grade,
+    //     unit_name: unitName,
+    //     class_duration: classDuration ? parseInt(classDuration) : null,
+    //     key_points: keyPoints,
+    //     layout_type: layoutType,
+    //     text_size: textSize,
+    //     color_scheme: colorScheme,
+    //     diagram_ratio: diagramRatio,
+    //     generation_status: "processing",
+    //   });
+    // if (insertError) {
+    //   console.error("Database insert error:", insertError);
+    //   return NextResponse.json(
+    //     { error: "データベースエラーが発生しました" },
+    //     { status: 500 }
+    //   );
+    // }
 
     // MVPでは同期処理（簡単にするため）
     const result = await processBlackboardGeneration(file, blackboardId, user.id, {
@@ -132,19 +135,16 @@ async function processBlackboardGeneration(
   }
 ): Promise<{ success: boolean; imageUrl?: string; error?: string }> {
   try {
-    // 1. 元画像をアップロード
-    const originalImageResult = await uploadImageBuffer(
-      Buffer.from(await file.arrayBuffer()),
-      `original_${blackboardId}.${file.name.split(".").pop()}`,
-      userId,
-      "originals"
-    );
+    // MVP版: シンプルな板書生成のみ
+    console.log("Starting blackboard generation for MVP");
 
     // 2. OCR処理
     const imageBuffer = Buffer.from(await file.arrayBuffer());
+    console.log("Processing OCR...");
     const ocrResult = await extractTextFromImage(imageBuffer);
 
     // 3. AI分析
+    console.log("Analyzing with AI...");
     const aiAnalysis = await analyzeWithAI({
       ocrText: ocrResult.text,
       subject: params.subject as any,
@@ -155,6 +155,7 @@ async function processBlackboardGeneration(
     });
 
     // 4. 板書生成
+    console.log("Generating blackboard...");
     const blackboardBuffer = await generateBlackboard(aiAnalysis, {
       subject: params.subject as any,
       grade: params.grade as any,
@@ -164,66 +165,31 @@ async function processBlackboardGeneration(
       diagramRatio: params.diagramRatio as any,
     });
 
-    // 5. 生成画像をアップロード
-    const generatedImageResult = await uploadImageBuffer(
-      blackboardBuffer,
-      `generated_${blackboardId}.png`,
-      userId,
-      "generated"
-    );
+    // MVP版: 一時的にBase64データURLとして返す（ファイルアップロードスキップ）
+    const base64Image = `data:image/png;base64,${blackboardBuffer.toString('base64')}`;
+    
+    // 本格版では以下のファイルアップロード処理を有効化
+    // const originalImageResult = await uploadImageBuffer(
+    //   Buffer.from(await file.arrayBuffer()),
+    //   `original_${blackboardId}.${file.name.split(".").pop()}`,
+    //   userId,
+    //   "originals"
+    // );
+    // const generatedImageResult = await uploadImageBuffer(
+    //   blackboardBuffer,
+    //   `generated_${blackboardId}.png`,
+    //   userId,
+    //   "generated"
+    // );
 
-    // 6. サムネイル生成
-    const thumbnailBuffer = await resizeAndUploadImage(
-      blackboardBuffer,
-      { width: 400, height: 300, quality: 80, format: "jpeg" },
-      `thumb_${blackboardId}.jpg`,
-      userId,
-      "thumbnails"
-    );
-
-    // 7. データベース更新
-    const { error: updateError } = await supabaseAdmin
-      .from("blackboards")
-      .update({
-        original_image_url: originalImageResult.url,
-        generated_image_url: generatedImageResult.url,
-        ocr_text: ocrResult.text,
-        ai_analysis: aiAnalysis,
-        generation_status: "completed",
-        title: aiAnalysis.title,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", blackboardId);
-
-    if (updateError) {
-      console.error("Database update error:", updateError);
-      throw updateError;
-    }
-
-    // 8. 使用量記録
-    await recordUsage(
-      userId,
-      "generation",
-      originalImageResult.size + generatedImageResult.size
-    );
-
-    console.log(`Blackboard generation completed: ${blackboardId}`);
+    console.log("Blackboard generation completed successfully!");
     
     return {
       success: true,
-      imageUrl: generatedImageResult.url,
+      imageUrl: base64Image,
     };
   } catch (error) {
     console.error(`Blackboard generation failed: ${blackboardId}`, error);
-
-    // エラー状態に更新
-    await supabaseAdmin
-      .from("blackboards")
-      .update({
-        generation_status: "failed",
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", blackboardId);
 
     return {
       success: false,
