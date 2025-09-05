@@ -1,15 +1,22 @@
 import { ImageAnnotatorClient } from "@google-cloud/vision";
 
-// Google Cloud Vision API クライアント
+// Google Cloud Vision API クライアント（遅延初期化）
+let visionClient: ImageAnnotatorClient | null = null;
+
 const getVisionClient = () => {
+  if (visionClient) {
+    return visionClient;
+  }
+
   // Vercel環境では環境変数からサービスアカウントキーを読み込み
   if (process.env.GOOGLE_CLOUD_CREDENTIALS_JSON) {
     try {
       const credentials = JSON.parse(process.env.GOOGLE_CLOUD_CREDENTIALS_JSON);
-      return new ImageAnnotatorClient({
+      visionClient = new ImageAnnotatorClient({
         credentials,
         projectId: credentials.project_id,
       });
+      return visionClient;
     } catch (error) {
       console.error("Failed to parse Google Cloud credentials:", error);
       throw new Error("Google Cloud認証情報の解析に失敗しました");
@@ -18,23 +25,23 @@ const getVisionClient = () => {
   
   // ローカル環境では従来通りファイルパス指定
   if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-    return new ImageAnnotatorClient({
+    visionClient = new ImageAnnotatorClient({
       keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS,
       projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
     });
+    return visionClient;
   }
 
   // APIキーを使用する場合（シンプルな認証）
   if (process.env.GOOGLE_CLOUD_VISION_API_KEY) {
-    return new ImageAnnotatorClient({
+    visionClient = new ImageAnnotatorClient({
       apiKey: process.env.GOOGLE_CLOUD_VISION_API_KEY,
     });
+    return visionClient;
   }
 
   throw new Error("Google Cloud認証情報が設定されていません");
 };
-
-const vision = getVisionClient();
 
 export interface OCRResult {
   text: string;
@@ -59,6 +66,7 @@ export async function extractTextFromImage(
   imageBuffer: Buffer
 ): Promise<OCRResult> {
   try {
+    const vision = getVisionClient();
     const [result] = await vision.textDetection({
       image: { content: imageBuffer },
       imageContext: {
@@ -115,6 +123,7 @@ export async function extractTextFromImageUrl(
   imageUrl: string
 ): Promise<OCRResult> {
   try {
+    const vision = getVisionClient();
     const [result] = await vision.textDetection({
       image: { source: { imageUri: imageUrl } },
       imageContext: {
