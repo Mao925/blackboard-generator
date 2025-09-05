@@ -15,6 +15,8 @@ const nextConfig: NextConfig = {
     // Enable optimizations
     optimizePackageImports: ["lucide-react"],
   },
+  // Disable telemetry for faster builds
+  telemetry: false,
 };
 
 export default nextConfig;
