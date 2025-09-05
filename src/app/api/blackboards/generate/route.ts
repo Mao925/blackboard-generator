@@ -105,15 +105,21 @@ export async function POST(request: NextRequest) {
     );
 
     if (result.success) {
+      // 新しいSVGレスポンス構造に統一
       return NextResponse.json({
+        success: true,
+        type: result.type || 'svg',
+        svgData: result.svgData,
         blackboardId,
-        imageUrl: result.imageUrl,
         status: "completed",
         message: "板書生成が完了しました",
       });
     } else {
       return NextResponse.json(
-        { error: result.error || "板書生成に失敗しました" },
+        { 
+          success: false,
+          error: result.error || "板書生成に失敗しました" 
+        },
         { status: 500 }
       );
     }

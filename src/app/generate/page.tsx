@@ -213,15 +213,21 @@ export default function GeneratePage() {
       }
 
       const result = await response.json();
+      console.log('📊 API Response:', result); // デバッグログ
       
       // 新しいSVGフォーマット対応
       if (result.type === 'svg' && result.svgData) {
+        console.log('✅ SVG data received:', result.svgData);
         setSvgBlackboardData(result.svgData);
         setGeneratedBlackboard(null); // 古いPNG形式をクリア
-      } else {
+      } else if (result.imageUrl) {
         // 旧形式（PNG）の後方互換性
+        console.log('⚠️ Legacy PNG format:', result.imageUrl);
         setGeneratedBlackboard(result.imageUrl);
         setSvgBlackboardData(null);
+      } else {
+        console.error('❌ No valid data received:', result);
+        throw new Error('有効なデータが受信されませんでした');
       }
     } catch (err) {
       console.error('Generation error:', err);
