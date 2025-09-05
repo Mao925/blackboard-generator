@@ -3,7 +3,7 @@
   "outputDirectory": ".next",
   "framework": "nextjs",
   "installCommand": "npm install",
-  "regions": ["nrt1"],
+  "regions": ["hnd1"],
   "functions": {
     "src/app/**/*.{js,ts,tsx}": {
       "runtime": "nodejs20.x"
