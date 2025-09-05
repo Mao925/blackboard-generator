@@ -3,6 +3,7 @@ import { getCurrentUser, checkUsageLimits, recordUsage } from "@/lib/auth";
 import { extractTextFromImage } from "@/lib/vision";
 import { analyzeWithAI } from "@/lib/openai";
 import { generateBlackboard } from "@/lib/blackboard-generator";
+import { generateSVGBlackboard } from "@/lib/svg-blackboard-generator";
 import { uploadImageBuffer, resizeAndUploadImage } from "@/lib/storage";
 import { supabaseAdmin } from "@/lib/supabase";
 import { v4 as uuidv4 } from "uuid";
@@ -171,9 +172,9 @@ async function processBlackboardGeneration(
       unitName: params.unitName || undefined,
     });
 
-    // 4. 板書生成
+    // 4. 板書生成（SVGベース - 日本語対応）
     console.log("Generating blackboard...");
-    const blackboardBuffer = await generateBlackboard(aiAnalysis, {
+    const blackboardBuffer = await generateSVGBlackboard(aiAnalysis, {
       subject: params.subject as any,
       grade: params.grade as any,
       layoutType: params.layoutType as any,

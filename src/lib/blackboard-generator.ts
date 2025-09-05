@@ -122,9 +122,8 @@ class BlackboardGenerator {
   // フォント初期化
   private initializeFonts(): void {
     try {
-      // Noto Sans JP フォントがシステムに存在する場合は登録
-      // 本来はフォントファイルパスを指定するが、Vercel環境では難しいため、
-      // 代わりに利用可能なシステムフォントを活用
+      // DejaVu Sans - Linuxサーバーでよく利用可能な日本語対応フォント
+      // registerFont('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', { family: 'DejaVu Sans' });
       console.log("Font initialization completed");
     } catch (error) {
       console.warn("Font registration failed, using fallback fonts:", error);
