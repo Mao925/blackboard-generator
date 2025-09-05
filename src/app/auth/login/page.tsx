@@ -13,13 +13,15 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { BookOpen, Eye, EyeOff, Loader2 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "react-hot-toast";
 import type { LoginForm } from "@/types";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { signIn, signInWithGoogle, loading: authLoading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const [formData, setFormData] = useState<LoginForm>({
     email: "",
     password: "",
@@ -27,37 +29,20 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!formData.email || !formData.password) {
+      toast.error("メールアドレスとパスワードを入力してください");
+      return;
+    }
+
     setLoading(true);
-    setError("");
 
     try {
-      // TODO: API連携実装
-      // const response = await fetch('/api/auth/login', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(formData)
-      // });
-
-      // if (!response.ok) {
-      //   throw new Error('ログインに失敗しました');
-      // }
-
-      // MVPでは簡易ログイン実装
-      if (formData.email && formData.password) {
-        // 仮のログイン成功処理
-        localStorage.setItem(
-          "user",
-          JSON.stringify({
-            email: formData.email,
-            name: "山田太郎",
-          })
-        );
-        router.push("/dashboard");
-      } else {
-        throw new Error("メールアドレスとパスワードを入力してください");
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "ログインに失敗しました");
+      await signIn(formData.email, formData.password);
+      toast.success("ログインしました");
+      router.push("/dashboard");
+    } catch (error) {
+      toast.error("ログインに失敗しました");
     } finally {
       setLoading(false);
     }
@@ -65,10 +50,9 @@ export default function LoginPage() {
 
   const handleGoogleLogin = async () => {
     try {
-      // TODO: Google OAuth実装
-      console.log("Google login");
-    } catch (err) {
-      setError("Googleログインに失敗しました");
+      await signInWithGoogle();
+    } catch (error) {
+      toast.error("Googleログインに失敗しました");
     }
   };
 
@@ -101,12 +85,6 @@ export default function LoginPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              {error && (
-                <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
-                  {error}
-                </div>
-              )}
-
               <div className="space-y-2">
                 <label
                   htmlFor="email"
@@ -123,7 +101,7 @@ export default function LoginPage() {
                     setFormData({ ...formData, email: e.target.value })
                   }
                   required
-                  disabled={loading}
+                  disabled={loading || authLoading}
                 />
               </div>
 
@@ -144,7 +122,7 @@ export default function LoginPage() {
                       setFormData({ ...formData, password: e.target.value })
                     }
                     required
-                    disabled={loading}
+                    disabled={loading || authLoading}
                   />
                   <button
                     type="button"
@@ -160,8 +138,12 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? (
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={loading || authLoading}
+              >
+                {loading || authLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ログイン中...
@@ -187,7 +169,7 @@ export default function LoginPage() {
                 variant="outline"
                 className="w-full mt-4"
                 onClick={handleGoogleLogin}
-                disabled={loading}
+                disabled={loading || authLoading}
               >
                 <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
                   <path

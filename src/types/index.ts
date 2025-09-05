@@ -1,132 +1,197 @@
-// ユーザー関連の型定義
+// 教科の型定義
+export type Subject = 
+  | "math" 
+  | "japanese" 
+  | "english" 
+  | "science" 
+  | "social_studies" 
+  | "physics" 
+  | "chemistry" 
+  | "biology" 
+  | "world_history" 
+  | "japanese_history" 
+  | "geography" 
+  | "other";
+
+// 学年の型定義
+export type Grade = 
+  | "elementary_4" 
+  | "elementary_5" 
+  | "elementary_6" 
+  | "junior_1" 
+  | "junior_2" 
+  | "junior_3" 
+  | "high_1" 
+  | "high_2" 
+  | "high_3";
+
+// ユーザーの型定義
 export interface User {
   id: string;
   email: string;
-  name: string;
-  schoolName?: string;
-  subjects: string[];
-  createdAt: Date;
-  updatedAt: Date;
+  full_name?: string;
+  plan_type: "free" | "pro" | "premium";
+  created_at: string;
+  updated_at: string;
+  stripe_customer_id?: string;
+  trial_ends_at?: string;
+  subscription_status?: "active" | "canceled" | "past_due" | "unpaid";
 }
 
-// 認証関連の型定義
-export interface AuthRequest {
-  email: string;
-  password: string;
-}
-
-export interface AuthResponse {
-  user: User;
-  token: string;
-}
-
-// 板書生成関連の型定義
-export interface BlackboardRequest {
-  imageFile: File;
-  subject: Subject;
-  grade: Grade;
-  unitName?: string;
-  classDuration: ClassDuration;
-  keyPoints?: string;
-  layoutType: LayoutType;
-  textSize: TextSize;
-  colorScheme: ColorScheme;
-  diagramRatio: DiagramRatio;
-}
-
-export interface BlackboardResponse {
-  id: string;
-  imageUrl: string;
-  pdfUrl: string;
-  title: string;
-  subject: Subject;
-  grade: Grade;
-  createdAt: Date;
-}
-
-// 科目の型定義
-export type Subject =
-  | "arithmetic" // 算数
-  | "mathematics" // 数学
-  | "japanese" // 国語
-  | "english" // 英語
-  | "science" // 理科
-  | "social"; // 社会
-
-// 学年の型定義
-export type Grade =
-  | "elementary_4" // 小4
-  | "elementary_5" // 小5
-  | "elementary_6" // 小6
-  | "junior_high_1" // 中1
-  | "junior_high_2" // 中2
-  | "junior_high_3" // 中3
-  | "high_school_1" // 高1
-  | "high_school_2" // 高2
-  | "high_school_3" // 高3
-  | "other"; // その他
-
-// 授業時間の型定義
-export type ClassDuration = 30 | 45 | 60 | 90;
-
-// レイアウトタイプの型定義
-export type LayoutType =
-  | "problem_solving" // 問題解法型
-  | "formula_explanation" // 公式説明型
-  | "diagram_focused" // 図解重視型
-  | "special_arithmetic"; // 中学受験特殊算型
-
-// テキストサイズの型定義
-export type TextSize = "small" | "medium" | "large";
-
-// カラースキームの型定義
-export type ColorScheme = "colorful" | "monochrome" | "two_color";
-
-// 図表比率の型定義
-export type DiagramRatio = "high" | "standard" | "low";
-
-// マイノート関連の型定義
-export interface SavedBlackboard {
-  id: string;
-  title: string;
-  subject: Subject;
-  grade: Grade;
-  imageUrl: string;
-  pdfUrl: string;
-  createdAt: Date;
-  userId: string;
-}
-
-// API応答の型定義
-export interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
-}
-
-// フォームの型定義
+// ログインフォームの型定義
 export interface LoginForm {
   email: string;
   password: string;
 }
 
+// 会員登録フォームの型定義
 export interface RegisterForm {
   email: string;
   password: string;
   confirmPassword: string;
-  name: string;
-  schoolName?: string;
-  subjects: Subject[];
+  fullName: string;
 }
 
+// 板書生成設定の型定義
 export interface BlackboardGenerateForm {
   subject: Subject;
   grade: Grade;
-  unitName: string;
-  classDuration: ClassDuration;
-  keyPoints: string;
-  layoutType: LayoutType;
-  textSize: TextSize;
-  colorScheme: ColorScheme;
-  diagramRatio: DiagramRatio;
+  layoutType: "standard" | "detailed" | "simple";
+  textSize: "small" | "medium" | "large";
+  colorScheme: "classic" | "modern" | "colorful";
+  diagramRatio: number;
+  unitName?: string;
+  keyPoints?: string[];
+  classDuration?: number;
+}
+
+// 板書データの型定義
+export interface Blackboard {
+  id: string;
+  user_id: string;
+  title: string;
+  subject: Subject;
+  grade: Grade;
+  original_image_url: string;
+  generated_image_url?: string;
+  thumbnail_url?: string;
+  ocr_text?: string;
+  ai_analysis?: string;
+  generation_config: BlackboardGenerateForm;
+  status: "pending" | "processing" | "completed" | "failed";
+  created_at: string;
+  updated_at: string;
+  file_size?: number;
+  processing_time?: number;
+}
+
+// 使用統計の型定義
+export interface UsageStats {
+  id: string;
+  user_id: string;
+  date: string;
+  generations_count: number;
+  storage_used: number;
+  created_at: string;
+}
+
+// プラン制限の型定義
+export interface PlanLimits {
+  id: string;
+  plan_type: "free" | "pro" | "premium";
+  max_generations_per_month: number;
+  max_storage_mb: number;
+  features: string[];
+  price_monthly: number;
+  stripe_price_id?: string;
+}
+
+// API レスポンスの型定義
+export interface ApiResponse<T = any> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  message?: string;
+}
+
+// 板書生成リクエストの型定義
+export interface GenerateBlackboardRequest {
+  image: File;
+  config: BlackboardGenerateForm;
+}
+
+// 板書生成レスポンスの型定義
+export interface GenerateBlackboardResponse {
+  id: string;
+  status: "pending" | "processing";
+  message: string;
+}
+
+// 板書ステータスレスポンスの型定義
+export interface BlackboardStatusResponse {
+  id: string;
+  status: "pending" | "processing" | "completed" | "failed";
+  progress?: number;
+  current_step?: string;
+  result?: {
+    generated_image_url: string;
+    thumbnail_url: string;
+    ocr_text: string;
+    ai_analysis: string;
+    processing_time: number;
+  };
+  error?: string;
+}
+
+// 使用量データの型定義
+export interface UsageData {
+  current_period: {
+    generations_used: number;
+    storage_used_mb: number;
+  };
+  limits: {
+    max_generations: number;
+    max_storage_mb: number;
+  };
+  plan: {
+    type: "free" | "pro" | "premium";
+    name: string;
+    features: string[];
+  };
+  overage_fees?: {
+    generation_fee: number;
+    storage_fee: number;
+    total: number;
+  };
+}
+
+// Stripe チェックアウトセッション作成リクエストの型定義
+export interface CreateCheckoutRequest {
+  price_id: string;
+  success_url: string;
+  cancel_url: string;
+}
+
+// Stripe チェックアウトセッション作成レスポンスの型定義
+export interface CreateCheckoutResponse {
+  session_id: string;
+  url: string;
+}
+
+// Stripe カスタマーポータルセッション作成レスポンスの型定義
+export interface CreatePortalResponse {
+  url: string;
+}
+
+// プロフィール更新の型定義
+export interface UpdateProfileRequest {
+  full_name?: string;
+  email?: string;
+}
+
+// エラーレスポンスの型定義
+export interface ErrorResponse {
+  error: string;
+  details?: string;
+  code?: string;
 }
