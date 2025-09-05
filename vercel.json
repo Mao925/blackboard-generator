@@ -1,12 +1,3 @@
 {
-  "buildCommand": "npm run build",
-  "outputDirectory": ".next",
-  "framework": "nextjs",
-  "installCommand": "npm install",
-  "regions": ["hnd1"],
-  "functions": {
-    "src/app/**/*.{js,ts,tsx}": {
-      "runtime": "nodejs20.x"
-    }
-  }
+  "regions": ["hnd1"]
 }
