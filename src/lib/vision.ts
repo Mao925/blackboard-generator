@@ -1,10 +1,40 @@
 import { ImageAnnotatorClient } from "@google-cloud/vision";
 
 // Google Cloud Vision API クライアント
-const vision = new ImageAnnotatorClient({
-  keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS,
-  projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
-});
+const getVisionClient = () => {
+  // Vercel環境では環境変数からサービスアカウントキーを読み込み
+  if (process.env.GOOGLE_CLOUD_CREDENTIALS_JSON) {
+    try {
+      const credentials = JSON.parse(process.env.GOOGLE_CLOUD_CREDENTIALS_JSON);
+      return new ImageAnnotatorClient({
+        credentials,
+        projectId: credentials.project_id,
+      });
+    } catch (error) {
+      console.error("Failed to parse Google Cloud credentials:", error);
+      throw new Error("Google Cloud認証情報の解析に失敗しました");
+    }
+  }
+  
+  // ローカル環境では従来通りファイルパス指定
+  if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+    return new ImageAnnotatorClient({
+      keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS,
+      projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
+    });
+  }
+
+  // APIキーを使用する場合（シンプルな認証）
+  if (process.env.GOOGLE_CLOUD_VISION_API_KEY) {
+    return new ImageAnnotatorClient({
+      apiKey: process.env.GOOGLE_CLOUD_VISION_API_KEY,
+    });
+  }
+
+  throw new Error("Google Cloud認証情報が設定されていません");
+};
+
+const vision = getVisionClient();
 
 export interface OCRResult {
   text: string;
