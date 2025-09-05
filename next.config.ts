@@ -15,6 +15,14 @@ const nextConfig: NextConfig = {
     // Enable optimizations
     optimizePackageImports: ["lucide-react"],
   },
+  // 環境変数の設定
+  env: {
+    CUSTOM_KEY: process.env.CUSTOM_KEY,
+  },
+  // 画像最適化の設定
+  images: {
+    domains: ['ujcwfpkskazokneqsaqd.supabase.co'],
+  },
 };
 
 export default nextConfig;

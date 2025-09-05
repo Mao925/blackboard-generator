@@ -5,16 +5,21 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl) {
-  console.error("Environment variables:", {
+  console.error("Environment variables check failed:", {
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NODE_ENV: process.env.NODE_ENV,
+    isClient: typeof window !== 'undefined'
   });
   throw new Error("Missing env.NEXT_PUBLIC_SUPABASE_URL");
 }
 if (!supabaseAnonKey) {
+  console.error("Missing NEXT_PUBLIC_SUPABASE_ANON_KEY");
   throw new Error("Missing env.NEXT_PUBLIC_SUPABASE_ANON_KEY");
 }
-if (!supabaseServiceRoleKey) {
+
+// サーバーサイドでのみサービスロールキーをチェック
+if (typeof window === 'undefined' && !supabaseServiceRoleKey) {
+  console.error("Missing SUPABASE_SERVICE_ROLE_KEY on server side");
   throw new Error("Missing env.SUPABASE_SERVICE_ROLE_KEY");
 }
 
@@ -22,12 +27,23 @@ if (!supabaseServiceRoleKey) {
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // サーバーサイド用（サービスロール）
-export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false,
-  },
-});
+export const supabaseAdmin = (() => {
+  // クライアントサイドでは null を返す
+  if (typeof window !== 'undefined') {
+    return null as any;
+  }
+  
+  if (!supabaseServiceRoleKey) {
+    throw new Error("Missing env.SUPABASE_SERVICE_ROLE_KEY");
+  }
+  
+  return createClient(supabaseUrl, supabaseServiceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
+})();
 
 // 型定義
 export type Database = {
