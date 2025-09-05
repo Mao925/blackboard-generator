@@ -1,4 +1,4 @@
-import { createClientSupabaseClient } from "./supabase-server";
+import { supabase } from "./supabase";
 import { supabaseAdmin } from "./supabase";
 import sharp from "sharp";
 import { v4 as uuidv4 } from "uuid";
@@ -24,7 +24,7 @@ export async function uploadImage(
   folder: "originals" | "generated" | "thumbnails" = "originals"
 ): Promise<UploadResult> {
   try {
-    const supabase = createClientSupabaseClient();
+    // supabaseクライアントは直接インポート済み
 
     // ファイル名生成
     const fileExtension = file.name.split(".").pop();

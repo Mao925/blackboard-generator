@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClientSupabaseClient } from "@/lib/supabase-server";
+import { supabase } from "@/lib/supabase";
 import type { User } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase";
 
@@ -22,7 +22,7 @@ export function useAuth() {
     error: null,
   });
 
-  const supabase = createClientSupabaseClient();
+  // supabaseクライアントは直接インポート済み
 
   useEffect(() => {
     // 初期セッション取得
