@@ -217,23 +217,53 @@ class BlackboardGenerator {
   // 日本語テキストを確実に表示するためのヘルパー関数
   private drawSafeText(text: string, x: number, y: number): void {
     try {
-      // MVP版：日本語が含まれている場合は積極的に英語に変換
+      // MVP版：すべてのテキストを事前に英語化
+      let displayText = text;
+      
+      // 日本語文字が含まれているかチェック
       const hasJapanese = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(text);
       
       if (hasJapanese) {
-        // 日本語が含まれている場合は即座に英語変換
-        const englishText = this.romanizeJapanese(text);
-        console.log(`Converting Japanese to English: "${text}" -> "${englishText}"`);
-        this.ctx.fillText(englishText, x, y);
-      } else {
-        // 英語/ASCII文字のみの場合はそのまま描画
-        this.ctx.fillText(text, x, y);
+        // 完全英語変換
+        displayText = this.convertToFullEnglish(text);
+        console.log(`🔄 Japanese->English: "${text}" -> "${displayText}"`);
       }
       
+      // 確実にASCII文字のみで描画
+      this.ctx.fillText(displayText, x, y);
+      
     } catch (error) {
-      console.error("Text rendering failed:", error);
-      this.ctx.fillText("(Text Error)", x, y);
+      console.error("❌ Text rendering failed:", error);
+      // エラー時も英語で表示
+      this.ctx.fillText("(Rendering Error)", x, y);
     }
+  }
+
+  // 完全英語変換（四角形文字化け完全回避）
+  private convertToFullEnglish(text: string): string {
+    // 特定フレーズの完全置換
+    const phraseMap: { [key: string]: string } = {
+      '数学の学習内容': 'Mathematics Learning Content',
+      '重要ポイント': 'Key Points',
+      '問題・ポイント': 'Problems & Key Points',
+      '解法・説明': 'Solutions & Explanations',
+      '詳細・補足': 'Details & Supplements',
+      '指導ポイント': 'Teaching Guidelines',
+      '教材内容の要点整理': 'Learning Material Summary',
+      '重要なポイントの説明': 'Important Points Explanation',
+      '補足説明や詳細': 'Additional Details & Explanations',
+      '練習問題や応用例': 'Practice Problems & Applications',
+      '生徒の理解度を確認しながら進める': 'Check student understanding while progressing',
+      '具体例を交えて説明する': 'Explain with concrete examples'
+    };
+
+    // フレーズ置換を優先
+    for (const [japanese, english] of Object.entries(phraseMap)) {
+      text = text.replace(new RegExp(japanese, 'g'), english);
+    }
+
+    // 残った日本語文字を個別変換
+    return this.romanizeJapanese(text);
   }
 
   // 包括的な日本語→英語変換（MVP版）
@@ -287,16 +317,40 @@ class BlackboardGenerator {
       '高校': 'High School',
       '年': 'Grade',
       
-      // よく使用される文字
-      'の': 'of',
-      'と': 'and',
-      'を': '',
-      'は': '',
-      'が': '',
-      'に': 'in',
-      'で': 'with',
-      'から': 'from',
-      'まで': 'to'
+      // よく使用される文字・助詞
+      'の': ' of ',
+      'と': ' and ',
+      'を': ' ',
+      'は': ' ',
+      'が': ' ',
+      'に': ' in ',
+      'で': ' with ',
+      'から': ' from ',
+      'まで': ' to ',
+      'や': ' and ',
+      'な': ' ',
+      'だ': ' ',
+      'である': ' is ',
+      'です': ' is ',
+      'ます': ' ',
+      'する': ' do ',
+      'なら': ' if ',
+      'ながら': ' while ',
+      'ため': ' for ',
+      
+      // 追加単語
+      '理解': 'understanding',
+      '確認': 'check',
+      '進める': 'proceed',
+      '具体': 'concrete',
+      '例': 'example',
+      '交える': 'include',
+      '生徒': 'student',
+      '度': 'level',
+      '教材': 'material',
+      '要点': 'key points',
+      '整理': 'organize',
+      '応用': 'application'
     };
 
     let result = text;
@@ -309,10 +363,21 @@ class BlackboardGenerator {
       result = result.replace(new RegExp(japanese, 'g'), english);
     });
 
-    // 余分なスペースを整理
-    result = result.replace(/\s+/g, ' ').trim();
+    // より積極的なスペース処理と日本語除去
+    result = result
+      .replace(/\s+/g, ' ')  // 複数スペースを単一に
+      .replace(/\s*of\s*/g, ' of ')  // "of"の前後スペース正規化
+      .replace(/\s*and\s*/g, ' and ')  // "and"の前後スペース正規化
+      .replace(/([a-zA-Z])([A-Z])/g, '$1 $2')  // CamelCaseにスペース追加
+      .trim();
     
-    return result || text; // 変換できない場合は元のテキストを返す
+    // 日本語文字が残っている場合は英語プレースホルダーに置換
+    if (/[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(result)) {
+      result = result.replace(/[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]+/g, '[Japanese Text]');
+      console.warn(`⚠️ Japanese characters remain, replaced with placeholder: ${result}`);
+    }
+    
+    return result || '[Translation Error]'; // 確実に英語文字列を返す
   }
 
   // メイン生成関数
