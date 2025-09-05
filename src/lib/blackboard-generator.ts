@@ -781,11 +781,14 @@ class BlackboardGenerator {
     this.drawSafeText(title, x, currentY + this.config.fontSize.sub);
     currentY += this.config.fontSize.sub + 20;
 
-    // コンテンツ
+    // コンテンツ（文字列・配列両対応）
     this.setFont(this.config.fontSize.main);
     this.ctx.fillStyle = this.config.textColor;
 
-    content.forEach((item, index) => {
+    // contentを配列に正規化
+    const contentArray = Array.isArray(content) ? content : [content];
+    
+    contentArray.forEach((item, index) => {
       const bullet = `${index + 1}. `;
       this.ctx.fillText(bullet, x, currentY + this.config.fontSize.main);
 

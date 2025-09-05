@@ -183,19 +183,31 @@ async function processBlackboardGeneration(
     // 4. 板書生成（確実動作版 - 英語固定コンテンツ）
     console.log("Generating blackboard with guaranteed English content...");
     
-    // ダミーAI解析（API制限回避）
+    // ダミーAI解析（正しい構造でAPI制限回避）
     const dummyAnalysis = {
       title: "Mathematics Learning Board",
-      subject: "Mathematics",
+      subject: "Mathematics", 
       grade: "Middle School",
+      mainContent: "Understanding fundamental mathematical concepts through step-by-step problem solving approach.",
+      subContent: "Key learning objectives include mastering basic formulas, developing logical thinking skills, and applying mathematical principles to real-world scenarios.",
       sections: [
         {
           title: "Key Learning Objectives",
-          content: "Understanding fundamental concepts and practical problem-solving skills"
+          content: [
+            "Understanding fundamental concepts",
+            "Practical problem-solving skills", 
+            "Logical thinking development",
+            "Real-world applications"
+          ]
         },
         {
-          title: "Problem-Solving Methods",
-          content: "Step-by-step approach to solve mathematical problems effectively"
+          title: "Problem-Solving Methods", 
+          content: [
+            "Step-by-step approach",
+            "Identify given information",
+            "Choose appropriate method",
+            "Verify the solution"
+          ]
         }
       ],
       teachingPoints: [
@@ -203,6 +215,11 @@ async function processBlackboardGeneration(
         "Practice with various examples", 
         "Connect to real-world applications",
         "Review and reinforce learning"
+      ],
+      keyFormulas: [
+        "y = ax + b (Linear function)",
+        "a² + b² = c² (Pythagorean theorem)", 
+        "Area = πr² (Circle area)"
       ]
     };
 
