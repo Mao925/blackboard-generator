@@ -217,50 +217,102 @@ class BlackboardGenerator {
   // 日本語テキストを確実に表示するためのヘルパー関数
   private drawSafeText(text: string, x: number, y: number): void {
     try {
-      // まず日本語テキストをそのまま試行
-      this.ctx.fillText(text, x, y);
+      // MVP版：日本語が含まれている場合は積極的に英語に変換
+      const hasJapanese = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(text);
       
-      // 文字幅をチェックして四角形化を検出
-      const metrics = this.ctx.measureText(text);
-      if (metrics.width < text.length * 2) {
-        // 四角形化している可能性が高い場合、ローマ字表記に変換
-        const romanizedText = this.romanizeJapanese(text);
-        console.warn(`Japanese text may be corrupted, using romanized: ${text} -> ${romanizedText}`);
-        this.ctx.fillText(romanizedText, x, y);
+      if (hasJapanese) {
+        // 日本語が含まれている場合は即座に英語変換
+        const englishText = this.romanizeJapanese(text);
+        console.log(`Converting Japanese to English: "${text}" -> "${englishText}"`);
+        this.ctx.fillText(englishText, x, y);
+      } else {
+        // 英語/ASCII文字のみの場合はそのまま描画
+        this.ctx.fillText(text, x, y);
       }
+      
     } catch (error) {
       console.error("Text rendering failed:", error);
       this.ctx.fillText("(Text Error)", x, y);
     }
   }
 
-  // 簡易的な日本語→ローマ字変換
+  // 包括的な日本語→英語変換（MVP版）
   private romanizeJapanese(text: string): string {
-    const kanjiMap: { [key: string]: string } = {
-      '数学': 'Suugaku (Math)',
-      '問題': 'Mondai (Problem)', 
-      '解法': 'Kaihou (Solution)',
-      '説明': 'Setsumei (Explanation)',
-      '重要': 'Juuyou (Important)',
-      'ポイント': 'Point',
-      '指導': 'Shidou (Teaching)',
-      '詳細': 'Shousai (Detail)',
-      '補足': 'Hosoku (Supplement)',
-      '学習': 'Gakushuu (Learning)',
-      '内容': 'Naiyou (Content)',
-      '板書': 'Bansho (Blackboard)',
-      '生成': 'Seisei (Generation)',
-      '完了': 'Kanryou (Complete)',
-      '作成': 'Sakusei (Creation)',
-      '日': 'Date'
+    const translations: { [key: string]: string } = {
+      // 基本科目
+      '数学': 'Mathematics',
+      '算数': 'Arithmetic', 
+      '国語': 'Japanese Language',
+      '理科': 'Science',
+      '社会': 'Social Studies',
+      '英語': 'English',
+      
+      // 数学用語
+      '問題': 'Problem',
+      '解法': 'Solution Method',
+      '公式': 'Formula',
+      '計算': 'Calculation',
+      '答え': 'Answer',
+      '証明': 'Proof',
+      
+      // 学習用語
+      '学習': 'Learning',
+      '内容': 'Content',
+      '重要': 'Important',
+      '説明': 'Explanation',
+      '詳細': 'Details',
+      '補足': 'Supplement',
+      '例題': 'Example',
+      '練習': 'Practice',
+      
+      // 指導用語
+      '指導': 'Teaching',
+      'ポイント': 'Points',
+      '目標': 'Objectives',
+      '手順': 'Steps',
+      '方法': 'Method',
+      
+      // 一般用語
+      '板書': 'Blackboard',
+      '生成': 'Generation',
+      '作成': 'Creation',
+      '完了': 'Complete',
+      '日': 'Date',
+      '時間': 'Time',
+      '分': 'minutes',
+      
+      // 学年
+      '小学': 'Elementary',
+      '中学': 'Middle School',
+      '高校': 'High School',
+      '年': 'Grade',
+      
+      // よく使用される文字
+      'の': 'of',
+      'と': 'and',
+      'を': '',
+      'は': '',
+      'が': '',
+      'に': 'in',
+      'で': 'with',
+      'から': 'from',
+      'まで': 'to'
     };
 
     let result = text;
-    Object.entries(kanjiMap).forEach(([japanese, roman]) => {
-      result = result.replace(new RegExp(japanese, 'g'), roman);
+    
+    // 長い表現から短い表現の順でマッチング
+    const sortedKeys = Object.keys(translations).sort((a, b) => b.length - a.length);
+    
+    sortedKeys.forEach(japanese => {
+      const english = translations[japanese];
+      result = result.replace(new RegExp(japanese, 'g'), english);
     });
 
-    return result;
+    // 余分なスペースを整理
+    result = result.replace(/\s+/g, ' ').trim();
+    
+    return result || text; // 変換できない場合は元のテキストを返す
   }
 
   // メイン生成関数
@@ -622,7 +674,7 @@ class BlackboardGenerator {
     // セクションタイトル
     this.setFont(this.config.fontSize.sub, "bold");
     this.ctx.fillStyle = this.config.accentColor;
-    this.ctx.fillText(title, x, currentY + this.config.fontSize.sub);
+    this.drawSafeText(title, x, currentY + this.config.fontSize.sub);
     currentY += this.config.fontSize.sub + 20;
 
     // コンテンツ
@@ -637,7 +689,7 @@ class BlackboardGenerator {
       const wrappedText = this.wrapText(item, width - bulletWidth);
 
       wrappedText.forEach((line, lineIndex) => {
-        this.ctx.fillText(
+        this.drawSafeText(
           line,
           x + bulletWidth,
           currentY +
@@ -769,9 +821,9 @@ class BlackboardGenerator {
     this.setFont(this.config.fontSize.sub, "bold");
     this.ctx.fillStyle = "#f59e0b";
     this.ctx.textAlign = "left";
-    // 絵文字と日本語を分けて安全に描画
-    this.ctx.fillText(
-      "【指導ポイント】",
+    // 確実に読める英語タイトル
+    this.drawSafeText(
+      "Teaching Points",
       this.config.padding.left + 20,
       currentY + this.config.fontSize.sub
     );
@@ -782,7 +834,7 @@ class BlackboardGenerator {
     this.ctx.fillStyle = "#92400e";
 
     points.forEach((point) => {
-      this.ctx.fillText(
+      this.drawSafeText(
         `• ${point}`,
         this.config.padding.left + 40,
         currentY + this.config.fontSize.small
