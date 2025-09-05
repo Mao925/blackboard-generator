@@ -71,7 +71,7 @@ export function SVGBlackboard({
 
   return (
     <div className="w-full max-w-6xl mx-auto p-4">
-      {/* コントロールボタン */}
+      {/* ダウンロードボタン */}
       <div className="mb-4 flex gap-4">
         <button
           onClick={downloadSVG}
@@ -83,7 +83,7 @@ export function SVGBlackboard({
           onClick={downloadPNG}
           className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
         >
-          PNGダウンロード（高品質）
+          PNGダウンロード
         </button>
       </div>
 

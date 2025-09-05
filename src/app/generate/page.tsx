@@ -80,7 +80,6 @@ export default function GeneratePage() {
     null
   );
   const [svgBlackboardData, setSvgBlackboardData] = useState<any>(null);
-  const [showSVGDemo, setShowSVGDemo] = useState(false);
   const [formData, setFormData] = useState<BlackboardGenerateForm>({
     subject: "mathematics",
     grade: "junior_high_3",
@@ -213,21 +212,17 @@ export default function GeneratePage() {
       }
 
       const result = await response.json();
-      console.log('📊 API Response:', result); // デバッグログ
       
-      // 新しいSVGフォーマット対応
+      // SVGフォーマット対応
       if (result.type === 'svg' && result.svgData) {
-        console.log('✅ SVG data received:', result.svgData);
         setSvgBlackboardData(result.svgData);
-        setGeneratedBlackboard(null); // 古いPNG形式をクリア
+        setGeneratedBlackboard(null);
       } else if (result.imageUrl) {
-        // 旧形式（PNG）の後方互換性
-        console.log('⚠️ Legacy PNG format:', result.imageUrl);
+        // 後方互換性
         setGeneratedBlackboard(result.imageUrl);
         setSvgBlackboardData(null);
       } else {
-        console.error('❌ No valid data received:', result);
-        throw new Error('有効なデータが受信されませんでした');
+        throw new Error('板書データの受信に失敗しました');
       }
     } catch (err) {
       console.error('Generation error:', err);
@@ -568,21 +563,16 @@ export default function GeneratePage() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-center">
-                  🎨 高品質板書が生成されました！
+                  📝 板書が生成されました！
                 </CardTitle>
                 <CardDescription className="text-center">
-                  完璧な日本語フォントで生成された板書をご確認ください
+                  生成された板書をプレビューし、ダウンロードしてください
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* SVG Preview (メイン) */}
+                {/* Board Preview */}
                 {svgBlackboardData ? (
                   <div className="text-center">
-                    <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                      <p className="text-green-800 font-medium">✅ SVG高品質版で表示中</p>
-                      <p className="text-green-700 text-sm">完璧な日本語フォント・ベクター品質・拡大可能</p>
-                    </div>
-                    
                     <SVGBlackboard
                       title={svgBlackboardData.title}
                       mainContent={svgBlackboardData.mainContent}
@@ -591,12 +581,8 @@ export default function GeneratePage() {
                     />
                   </div>
                 ) : generatedBlackboard ? (
-                  /* 旧PNG版（後方互換性） */
+                  /* Legacy support */
                   <div className="text-center">
-                    <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                      <p className="text-yellow-800 font-medium">⚠️ レガシーPNG版で表示中</p>
-                      <p className="text-yellow-700 text-sm">文字化けの可能性があります</p>
-                    </div>
                     
                     <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
                       <img
@@ -658,14 +644,6 @@ export default function GeneratePage() {
                   <Button
                     size="lg"
                     variant="outline"
-                    onClick={() => setShowSVGDemo(true)}
-                    className="flex-1 max-w-xs bg-green-50 border-green-200 text-green-800 hover:bg-green-100"
-                  >
-                    🎨 SVG高品質版を試す
-                  </Button>
-                  <Button
-                    size="lg"
-                    variant="outline"
                     onClick={() => router.push("/dashboard")}
                     className="flex-1 max-w-xs"
                   >
@@ -677,68 +655,6 @@ export default function GeneratePage() {
           </div>
         )}
 
-        {/* SVG高品質デモ */}
-        {showSVGDemo && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg max-w-7xl w-full max-h-[90vh] overflow-auto">
-              <div className="p-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-2xl font-bold text-gray-900">
-                    🎨 SVG高品質黒板（完璧な日本語表示）
-                  </h2>
-                  <Button 
-                    onClick={() => setShowSVGDemo(false)}
-                    variant="outline"
-                    size="sm"
-                  >
-                    閉じる
-                  </Button>
-                </div>
-                
-                <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <h3 className="font-semibold text-green-800 mb-2">✅ この方式の利点</h3>
-                  <ul className="text-green-700 text-sm space-y-1">
-                    <li>• 100%確実な日本語フォント表示</li>
-                    <li>• ベクターグラフィクスで拡大しても高品質</li>
-                    <li>• ブラウザの完璧なフォントレンダリング活用</li>
-                    <li>• SVG・PNG両方でダウンロード可能</li>
-                  </ul>
-                </div>
-
-                <SVGBlackboard
-                  title="数学の学習内容"
-                  mainContent="基本概念から応用まで段階的に学習"
-                  sections={[
-                    {
-                      title: "学習のポイント",
-                      content: [
-                        "基本概念の理解を深める",
-                        "実践的な問題解決能力を身につける", 
-                        "論理的思考力を育成する",
-                        "実世界への応用を考える"
-                      ]
-                    },
-                    {
-                      title: "解法のステップ",
-                      content: [
-                        "与えられた情報を整理する",
-                        "適切な解法を選択する",
-                        "段階的に計算を進める",
-                        "答えを検証し確認する"
-                      ]
-                    }
-                  ]}
-                  teachingPoints={[
-                    "生徒の理解度を確認しながら進める",
-                    "具体例を交えて説明する",
-                    "重要なポイントを強調して記憶に残す",
-                    "練習問題で理解を定着させる"
-                  ]}
-                />
-              </div>
-            </div>
-          </div>
-        )}
       </main>
     </div>
   );

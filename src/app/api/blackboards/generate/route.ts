@@ -186,8 +186,8 @@ async function processBlackboardGeneration(
       unitName: params.unitName || undefined,
     });
 
-    // 4. 高品質SVG板書生成（新メイン機能）
-    console.log("Generating high-quality SVG blackboard...");
+    // 4. 板書生成
+    console.log("Generating blackboard...");
     
     // ダミーAI解析（正しい構造でAPI制限回避）
     const dummyAnalysis = {
@@ -299,7 +299,7 @@ async function processBlackboardGeneration(
       colorScheme: params.colorScheme
     };
 
-    console.log("High-quality SVG blackboard data generated successfully!");
+    console.log("Blackboard data generated successfully!");
 
     return {
       success: true,
