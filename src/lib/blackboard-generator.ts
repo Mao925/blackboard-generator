@@ -140,8 +140,39 @@ class BlackboardGenerator {
   // フォント初期化
   private initializeFonts(): void {
     try {
-      // DejaVu Sans - Linuxサーバーでよく利用可能な日本語対応フォント
-      // registerFont('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', { family: 'DejaVu Sans' });
+      // macOS固有の日本語フォント登録を試行
+      const fs = require('fs');
+      
+      // macOSでよく利用可能な日本語フォントパス
+      const macFontPaths = [
+        '/System/Library/Fonts/Helvetica.ttc',
+        '/System/Library/Fonts/ヒラギノ角ゴシック W0.ttc',
+        '/System/Library/Fonts/ヒラギノ角ゴシック W1.ttc',
+        '/System/Library/Fonts/ヒラギノ角ゴシック W2.ttc',
+        '/System/Library/Fonts/ヒラギノ角ゴシック W3.ttc',
+        '/System/Library/Fonts/ヒラギノ角ゴシック W4.ttc',
+        '/System/Library/Fonts/ヒラギノ角ゴシック W5.ttc',
+        '/System/Library/Fonts/ヒラギノ角ゴシック W6.ttc',
+        '/System/Library/Fonts/ヒラギノ角ゴシック W7.ttc',
+        '/System/Library/Fonts/ヒラギノ角ゴシック W8.ttc',
+        '/System/Library/Fonts/ヒラギノ角ゴシック W9.ttc',
+        '/Library/Fonts/Arial Unicode MS.ttf'
+      ];
+
+      for (const fontPath of macFontPaths) {
+        try {
+          if (fs.existsSync(fontPath)) {
+            const fontName = fontPath.includes('ヒラギノ') ? 'Hiragino Sans' : 
+                           fontPath.includes('Arial Unicode') ? 'Arial Unicode MS' : 'Helvetica';
+            registerFont(fontPath, { family: fontName });
+            console.log(`Successfully registered font: ${fontName} from ${fontPath}`);
+            break; // 最初に見つかったフォントを使用
+          }
+        } catch (fontError) {
+          console.warn(`Failed to register ${fontPath}:`, fontError);
+        }
+      }
+      
       console.log("Font initialization completed");
     } catch (error) {
       console.warn("Font registration failed, using fallback fonts:", error);
@@ -151,24 +182,85 @@ class BlackboardGenerator {
   // 日本語対応フォント設定
   private setFont(size: number, weight: string = "normal"): void {
     try {
-      // Node.js/Canvas環境で最も互換性の高いフォント設定
-      // シンプルで確実なフォントフォールバック
-      const fontFamily = 'Arial, "Liberation Sans", "DejaVu Sans", sans-serif';
+      // 登録済みフォントを優先した日本語対応フォント設定
+      const fontFamilies = [
+        '"Hiragino Sans"',           // 登録したmacOSフォント
+        '"Arial Unicode MS"',        // Unicode対応フォント
+        '"Helvetica"',               // macOS標準
+        '"Liberation Sans"',         // Linux標準
+        '"DejaVu Sans"',            // 汎用
+        'Arial',                     // Windows/汎用
+        'sans-serif'                 // 最終フォールバック
+      ];
+      
+      const fontFamily = fontFamilies.join(', ');
       this.ctx.font = `${weight} ${size}px ${fontFamily}`;
       
-      // テキストレンダリング設定
+      // テキストレンダリング設定の最適化
       this.ctx.textBaseline = "alphabetic";
+      this.ctx.textRenderingOptimization = "optimizeLegibility";
       this.ctx.fillStyle = this.ctx.fillStyle || "#000000";
       
-      // フォント読み込み確認のためテスト描画
-      const testText = "テスト";
-      const metrics = this.ctx.measureText(testText);
+      // 日本語テキストでフォント動作確認
+      const testTexts = ["Test", "ABC123", "Hello"];
+      testTexts.forEach(text => {
+        const metrics = this.ctx.measureText(text);
+        console.log(`Font test - "${text}": width=${metrics.width}, font=${this.ctx.font}`);
+      });
       
-      console.log(`Font set: ${this.ctx.font}, test width: ${metrics.width}`);
     } catch (error) {
-      console.warn("Font setting failed, using fallback:", error);
+      console.warn("Font setting failed, using basic fallback:", error);
       this.ctx.font = `${weight} ${size}px Arial, sans-serif`;
     }
+  }
+
+  // 日本語テキストを確実に表示するためのヘルパー関数
+  private drawSafeText(text: string, x: number, y: number): void {
+    try {
+      // まず日本語テキストをそのまま試行
+      this.ctx.fillText(text, x, y);
+      
+      // 文字幅をチェックして四角形化を検出
+      const metrics = this.ctx.measureText(text);
+      if (metrics.width < text.length * 2) {
+        // 四角形化している可能性が高い場合、ローマ字表記に変換
+        const romanizedText = this.romanizeJapanese(text);
+        console.warn(`Japanese text may be corrupted, using romanized: ${text} -> ${romanizedText}`);
+        this.ctx.fillText(romanizedText, x, y);
+      }
+    } catch (error) {
+      console.error("Text rendering failed:", error);
+      this.ctx.fillText("(Text Error)", x, y);
+    }
+  }
+
+  // 簡易的な日本語→ローマ字変換
+  private romanizeJapanese(text: string): string {
+    const kanjiMap: { [key: string]: string } = {
+      '数学': 'Suugaku (Math)',
+      '問題': 'Mondai (Problem)', 
+      '解法': 'Kaihou (Solution)',
+      '説明': 'Setsumei (Explanation)',
+      '重要': 'Juuyou (Important)',
+      'ポイント': 'Point',
+      '指導': 'Shidou (Teaching)',
+      '詳細': 'Shousai (Detail)',
+      '補足': 'Hosoku (Supplement)',
+      '学習': 'Gakushuu (Learning)',
+      '内容': 'Naiyou (Content)',
+      '板書': 'Bansho (Blackboard)',
+      '生成': 'Seisei (Generation)',
+      '完了': 'Kanryou (Complete)',
+      '作成': 'Sakusei (Creation)',
+      '日': 'Date'
+    };
+
+    let result = text;
+    Object.entries(kanjiMap).forEach(([japanese, roman]) => {
+      result = result.replace(new RegExp(japanese, 'g'), roman);
+    });
+
+    return result;
   }
 
   // メイン生成関数
@@ -321,7 +413,7 @@ class BlackboardGenerator {
     this.ctx.textAlign = "center";
 
     const x = this.config.width / 2;
-    this.ctx.fillText(title, x, y + this.config.fontSize.title);
+    this.drawSafeText(title, x, y + this.config.fontSize.title);
 
     // 下線
     const titleWidth = this.ctx.measureText(title).width;
@@ -677,8 +769,9 @@ class BlackboardGenerator {
     this.setFont(this.config.fontSize.sub, "bold");
     this.ctx.fillStyle = "#f59e0b";
     this.ctx.textAlign = "left";
+    // 絵文字と日本語を分けて安全に描画
     this.ctx.fillText(
-      "💡 指導ポイント",
+      "【指導ポイント】",
       this.config.padding.left + 20,
       currentY + this.config.fontSize.sub
     );
